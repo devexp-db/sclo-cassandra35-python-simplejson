@@ -1,7 +1,14 @@
-Name:           python-simplejson
+%{?scl:%scl_package python-simplejson}
+%{!?scl:%global pkg_name %{name}}
+
+%if 0%{?fedora}
+%global with_python3 1
+%endif
+
+Name:           %{?scl_prefix}python-simplejson
 
 Version:        3.10.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Simple, fast, extensible JSON encoder/decoder for Python
 
 Group:          System Environment/Libraries
@@ -35,16 +42,18 @@ with Python 2.5.  It gets updated more regularly than the json module in the
 python stdlib.
 
 
-%package -n python2-simplejson
+%package -n %{?scl_prefix}python2-simplejson
 Summary:        Simple, fast, extensible JSON encoder/decoder for Python2
 Group:          System Environment/Libraries
 BuildRequires:  python2-devel
 BuildRequires:  python-setuptools
 BuildRequires:  python-nose
 BuildRequires:  python-sphinx
-%{?python_provide:%python_provide python2-simplejson}
+%{!?scl:%{?python_provide:%python_provide python2-simplejson}}
+%{?scl:Requires: %scl_runtime}
+%{?scl:BuildRequires: %scl-scldevel}
 
-%description -n python2-simplejson
+%description -n %{?scl_prefix}python2-simplejson
 simplejson is a simple, fast, complete, correct and extensible JSON
 <http://json.org> encoder and decoder for Python 2.5+. It is pure Python code
 with no dependencies, but includes an optional C extension for a serious speed
@@ -62,16 +71,18 @@ included with Python 2.6 and Python 3.0, but maintains backwards compatibility
 with Python 2.5.  It gets updated more regularly than the json module in the
 python stdlib.
 
-
-%package -n python%{python3_pkgversion}-simplejson
+%if 0%{?with_python3}
+%package -n %{?scl_prefix}python%{python3_pkgversion}-simplejson
 Summary:        Simple, fast, extensible JSON encoder/decoder for Python3
 Group:          System Environment/Libraries
 BuildRequires: python%{python3_pkgversion}-devel
 BuildRequires: python%{python3_pkgversion}-setuptools
 BuildRequires: python%{python3_pkgversion}-nose
-%{?python_provide:%python_provide python%{python3_pkgversion}-simplejson}
+%{!?scl:%{?python_provide:%python_provide python%{python3_pkgversion}-simplejson}}
+%{?scl:Requires: %scl_runtime}
+%{?scl:BuildRequires: %scl-scldevel}
 
-%description -n python%{python3_pkgversion}-simplejson
+%description -n %{?scl_prefix}python%{python3_pkgversion}-simplejson
 simplejson is a simple, fast, complete, correct and extensible JSON
 <http://json.org> encoder and decoder for Python 2.5+ and python3.3+ It is pure
 Python code with no dependencies, but includes an optional C extension for a
@@ -88,42 +99,57 @@ simplejson is the externally maintained development version of the json library
 included with Python 2.6 and Python 3.0, but maintains backwards compatibility
 with Python 2.5.  It gets updated more regularly than the json module in the
 python stdlib.
-
+%endif # with_python3
 
 %prep
 %setup -q -n simplejson-%{version}
 
 %build
+%{?scl:scl enable %{scl} - << "EOF"}
 %py2_build
 ./scripts/make_docs.py
 
+%if 0%{?with_python3}
 %py3_build
+%endif # with_python3
+%{?scl:EOF}
 
 %install
-%py2_install
+%{?scl:scl enable %{scl} - << "EOF"}
+%{py2_install -- --prefix %{?_prefix}}
 
 rm docs/.buildinfo
 rm docs/.nojekyll
 
-%py3_install
+%if 0%{?with_python3}
+%{py3_install -- --prefix %{?_prefix}}
+%endif # with_python3
+%{?scl:EOF}
 
 %check
 nosetests -q
 
+%if 0%{?with_python3}
 nosetests-%{python3_version} -q
+%endif # with_python3
 
 
-%files -n python2-simplejson
+%files -n %{?scl_prefix}python2-simplejson
 %license LICENSE.txt
 %doc docs
 %{python2_sitearch}/*
 
-%files -n python%{python3_pkgversion}-simplejson
+%if 0%{?with_python3}
+%files -n %{?scl_prefix}python%{python3_pkgversion}-simplejson
 %license LICENSE.txt
 %doc docs
 %{python3_sitearch}/*
+%endif # with_python3
 
 %changelog
+* Mon Oct 02 2017 Augusto Mecking Caringi <acaringi@redhat.com> - 3.10.0-6
+- scl conversion
+
 * Thu Aug 03 2017 Fedora Release Engineering <releng@fedoraproject.org> - 3.10.0-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
 
